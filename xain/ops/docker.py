@@ -1,5 +1,7 @@
+import os
 import subprocess
 from time import strftime
+from typing import Optional
 
 from absl import app
 from faker import Faker
@@ -33,23 +35,34 @@ def generate_unique_tag():
     return f"{utc_time}_{fake_name}"
 
 
-def build(should_push: bool = False):
+def build(
+    should_push: bool = False,
+    tag: Optional[str] = None,
+    dockerfile: Optional[str] = None,
+):
     """Build xain docker container and tag it uniquely
     If image already exists a new tag will be added anyway
 
     Args:
         tag (str): docker image tag to be used
     """
-    tag = generate_unique_tag()
-    image_name_unique = get_image_name(tag)
+    if tag is None:
+        tag = generate_unique_tag()
 
-    command = ["docker", "build", ".", "-t", image_name_unique]
+    image = get_image_name(tag)
+
+    command = ["docker", "build", ".", "-t", image]
+
+    if dockerfile is not None:
+        assert os.path.isfile(dockerfile)
+        command = command + ["-f", dockerfile]
+
     subprocess.run(command, cwd=root_dir).check_returncode()
 
     if should_push:
         push(tag)
 
-    return image_name_unique
+    return image
 
 
 def push(tag: str):
