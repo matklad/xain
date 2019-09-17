@@ -11,12 +11,12 @@ RUN pip install -U pip==19.2.3 setuptools==41.2.0
 # First copy scripts and setup.py to install dependencies
 # and avoid reinstalling dependencies when only changing the code
 COPY setup.py setup.py
+COPY scripts scripts
 
-# Install only install_requires
-RUN python setup.py egg_info && \
-    LN=$(awk '/tensorflow/{ print NR; exit }' xain.egg-info/requires.txt) && \
-    IR=$(head -n $LN xain.egg-info/requires.txt | awk '{gsub(/\[.+\]/,"");}1') && \
-    pip install $IR
+# Install only install_requires as well as tensorflow without executing
+# the cmdclass "develop"
+ARG TF_VARIANT=cpu
+RUN pip install $(./scripts/get_requires_from_setup.py $TF_VARIANT)
 
 COPY xain xain
 COPY protobuf protobuf
